@@ -15,7 +15,7 @@ dpkg --add-architecture arm64 && \
 apt-get update && \
 apt-get -y install \
   openssl \
-  libssl-de:arm64 \
+  libssl-dev:arm64 \
   pkg-config \
   libsqlite3-dev \
   git \
