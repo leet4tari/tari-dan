@@ -49,10 +49,11 @@ jobs:
         run: |
           if [ -z "${{ inputs.version }}" ]; then
             echo "Get current version"
+            TVN_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' "${GITHUB_WORKSPACE}/applications/tari_validator_node/Cargo.toml")
             TARI_SOURCE_ROOT="."
             VBRANCH=$(git --git-dir ${TARI_SOURCE_ROOT}/.git branch --show-current)
             VSHA_SHORT=$(git --git-dir ${TARI_SOURCE_ROOT}/.git rev-parse --short HEAD)
-            VERSION="${VBRANCH}_$(date -u '+%Y%m%d')_${VSHA_SHORT}"
+            VERSION="v${TVN_VERSION}-${VBRANCH}_$(date -u '+%Y%m%d')_${VSHA_SHORT}"
           else
             VERSION=${{ inputs.version }}
           fi
