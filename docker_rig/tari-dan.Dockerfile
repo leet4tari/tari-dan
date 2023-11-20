@@ -102,7 +102,7 @@ RUN if [ "${TARGETARCH}" = "arm64" ] && [ "${BUILDARCH}" != "${TARGETARCH}" ] ; 
     echo "Tari Dan Build Done"
 
 # Create runtime base minimal image for the target platform executables
-FROM --platform=$TARGETPLATFORM rust:${RUST_VERSION}-${OS_BASE} as runtime
+FROM --platform=$TARGETPLATFORM ${OS_BASE} as runtime
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
@@ -116,37 +116,9 @@ ARG VERSION
 # Disable Prompt During Packages Installation
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Node Version
-ARG NODE_MAJOR
-ENV NODE_MAJOR=$NODE_MAJOR
-
-# Prep nodejs 20.x
-RUN apt-get update && apt-get install -y \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gpg && \
-      mkdir -p /etc/apt/keyrings && \
-      curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-      echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-
-RUN apt-get update && apt-get --no-install-recommends install -y \
-      libreadline8 \
-      libreadline-dev \
-      libsqlite3-0 \
-      openssl \
-      nodejs
-
-RUN rustup target add wasm32-unknown-unknown
-
-RUN rustup toolchain install nightly --force-non-host && \
-    rustup target add wasm32-unknown-unknown --toolchain nightly
-#    rustup default nightly-2022-11-03
-
-# Debugging
-RUN rustup target list --installed && \
-    rustup toolchain list && \
-    rustup show
+RUN apt-get update && \
+    apt-get --no-install-recommends install -y \
+      dumb-init
 
 RUN groupadd --gid 1000 tari && \
     useradd --create-home --no-log-init --shell /bin/bash \
@@ -167,14 +139,6 @@ RUN mkdir -p "/home/tari/sources/tari-dan" && \
 USER tari
 WORKDIR /home/tari
 
-# Debugging
-RUN rustup target list --installed && \
-    rustup toolchain list && \
-    rustup show
-
-# Move into python due to Cross-compile arm64 on amd64 issue
-#RUN cargo install cargo-generate
-
 WORKDIR /home/tari/sources
 #ADD --chown=tari:tari tari tari
 #ADD --chown=tari:tari tari-dan tari-dan
@@ -182,5 +146,5 @@ WORKDIR /home/tari/sources
 COPY --from=builder-tari-dan /usr/local/bin/tari_* /usr/local/bin/
 
 ENV USER=tari
-#CMD [ "python3", "main.py" ]
 #CMD [ "tail", "-f", "/dev/null" ]
+#CMD ["dumb-init", "node", "./bin/www"]
