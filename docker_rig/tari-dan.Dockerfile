@@ -22,6 +22,7 @@ ARG TARGETVARIANT
 ARG RUST_TOOLCHAIN
 ARG RUST_TARGET
 ARG RUST_VERSION
+ARG OS_BASE
 
 # Node Version
 ARG NODE_MAJOR
@@ -102,7 +103,7 @@ RUN if [ "${TARGETARCH}" = "arm64" ] && [ "${BUILDARCH}" != "${TARGETARCH}" ] ; 
     echo "Tari Dan Build Done"
 
 # Create runtime base minimal image for the target platform executables
-FROM --platform=$TARGETPLATFORM ${OS_BASE} as runtime
+FROM --platform=$TARGETPLATFORM debian:${OS_BASE} as runtime
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
@@ -110,6 +111,7 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 ARG RUST_VERSION
+ARG OS_BASE
 
 ARG VERSION
 
