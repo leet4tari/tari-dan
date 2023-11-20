@@ -2,12 +2,13 @@
 
 # https://hub.docker.com/_/rust
 ARG RUST_VERSION=1.74
+ARG OS_BASE=bookworm
 
 # Node Version
 ARG NODE_MAJOR=20
 
 # rust source compile with cross platform build support
-FROM --platform=$BUILDPLATFORM rust:$RUST_VERSION-bullseye as builder-tari-dan
+FROM --platform=$BUILDPLATFORM rust:${RUST_VERSION}-${OS_BASE} as builder-tari-dan
 
 # Declare to make available
 ARG BUILDPLATFORM
@@ -56,13 +57,12 @@ RUN if [ "${BUILDARCH}" != "${TARGETARCH}" ] && [ "${ARCH}" = "native" ] ; then 
 
 WORKDIR /tari-dan
 
-ADD tari-dan .
-ADD cross-compile-aarch64.sh .
+ADD . .
 
 RUN if [ "${TARGETARCH}" = "arm64" ] && [ "${BUILDARCH}" != "${TARGETARCH}" ] ; then \
       # Hardcoded ARM64 envs for cross-compiling - FixMe soon
-      # source /tari-dan/cross-compile-aarch64.sh
-      . /tari-dan/cross-compile-aarch64.sh ; \
+      # source /tari-dan/docker_rig/cross-compile-aarch64.sh
+      . /tari-dan/docker_rig/cross-compile-aarch64.sh ; \
     fi && \
     if [ -n "${RUST_TOOLCHAIN}" ] ; then \
       # Install a non-standard toolchain if it has been requested.
@@ -102,7 +102,7 @@ RUN if [ "${TARGETARCH}" = "arm64" ] && [ "${BUILDARCH}" != "${TARGETARCH}" ] ; 
     echo "Tari Dan Build Done"
 
 # Create runtime base minimal image for the target platform executables
-FROM --platform=$TARGETPLATFORM rust:$RUST_VERSION-bullseye as runtime
+FROM --platform=$TARGETPLATFORM rust:${RUST_VERSION}-${OS_BASE} as runtime
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
