@@ -13,7 +13,7 @@ image = "rust:1.74.0-bookworm"
 pre-build = [ """
 dpkg --add-architecture arm64 && \
 apt-get update && \
-apt-get -y install \
+apt-get install --assume-yes --no-install-recommends \
   openssl \
   libssl-dev:arm64 \
   pkg-config \
