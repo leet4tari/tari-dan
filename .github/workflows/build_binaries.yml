@@ -123,7 +123,7 @@ jobs:
       - name: Install Linux dependencies - Ubuntu - linux-arm64
         if: ${{ (startsWith(runner.os,'Linux')) && (matrix.builds.name == 'linux-arm64') }}
         run: |
-          sudo bash scripts/install_ubuntu_dependencies-arm64.sh gcc-multilib "libssl-dev:arm64"
+          sudo bash scripts/install_ubuntu_dependencies-arm64.sh gcc-multilib
           rustup target add aarch64-unknown-linux-gnu
           rustup toolchain install stable-aarch64-unknown-linux-gnu
 
