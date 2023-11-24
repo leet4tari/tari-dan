@@ -1,7 +1,7 @@
 ---
 name: Build Matrix of Binaries
 
-on:
+'on':
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
@@ -429,6 +429,7 @@ jobs:
     steps:
       - name: Download binaries
         uses: actions/download-artifact@v3
+
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
