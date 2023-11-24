@@ -41,7 +41,7 @@ jobs:
           #
           # build only single target image
           # matrix_selection=$( jq -c '.[] | select( ."name" == "windows-x64" )' ${{ env.matrix-json-file }} )
-          matrix_selection=$( jq -c '.[] | select( ."name" ~= "linux" )' ${{ env.matrix-json-file }} )
+          matrix_selection=$( jq -c '.[] | select( ."name" | contains("linux") )' ${{ env.matrix-json-file }} )
           #
           # buid select target images - build_enabled
           # matrix_selection=$( jq -c '.[] | select( ."build_enabled" != false )' ${{ env.matrix-json-file }} )
