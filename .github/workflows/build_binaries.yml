@@ -41,9 +41,10 @@ jobs:
           #
           # build only single target image
           # matrix_selection=$( jq -c '.[] | select( ."name" == "windows-x64" )' ${{ env.matrix-json-file }} )
+          matrix_selection=$( jq -c '.[] | select( ."name" ~= "linux" )' ${{ env.matrix-json-file }} )
           #
           # buid select target images - build_enabled
-          matrix_selection=$( jq -c '.[] | select( ."build_enabled" != false )' ${{ env.matrix-json-file }} )
+          # matrix_selection=$( jq -c '.[] | select( ."build_enabled" != false )' ${{ env.matrix-json-file }} )
           #
           # Setup the json build matrix
           matrix=$(echo ${matrix_selection} | jq -s -c '{"builds": .}')
@@ -113,13 +114,13 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
 
       - name: Install Linux dependencies - Ubuntu
-        if: ${{ startsWith(runner.os,'Linux') && matrix.builds.cross != 'true' }}
+        if: ${{ (startsWith(runner.os,'Linux')) && (matrix.builds.cross != 'true') }}
         run: |
           sudo apt-get update
           sudo bash scripts/install_ubuntu_dependencies.sh
 
       - name: Install Linux dependencies - Ubuntu - linux-arm64
-        if: ${{ startsWith(runner.os,'Linux') && matrix.builds.name == 'linux-arm64' }}
+        if: ${{ (startsWith(runner.os,'Linux')) && (matrix.builds.name == 'linux-arm64') }}
         run: |
           sudo bash scripts/install_ubuntu_dependencies-arm64.sh "libssl-dev:arm64" pkg-config-aarch64-linux-gnu
           rustup target add aarch64-unknown-linux-gnu
