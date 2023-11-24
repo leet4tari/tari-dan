@@ -1,7 +1,7 @@
 ---
 name: Source Coverage
 
-on:
+'on':
   workflow_dispatch:
 
 env:
@@ -10,7 +10,9 @@ env:
 jobs:
   coverage:
     name: test and generate cov
-    runs-on: [ self-hosted, ubuntu18.04-high-mem ]
+    #runs-on: [ self-hosted, ubuntu18.04-high-mem ]
+    runs-on: ubuntu-latest
+
     steps:
       - name: checkout
         uses: actions/checkout@v4
