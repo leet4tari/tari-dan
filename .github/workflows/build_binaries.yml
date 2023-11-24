@@ -119,7 +119,7 @@ jobs:
           sudo bash scripts/install_ubuntu_dependencies.sh
 
       - name: Install Linux dependencies - Ubuntu - linux-arm64
-        if: ${{ startsWith(runner.os,'Linux') && matrix.builds.name != 'linux-arm64' }}
+        if: ${{ startsWith(runner.os,'Linux') && matrix.builds.name == 'linux-arm64' }}
         run: |
           sudo bash scripts/install_ubuntu_dependencies-arm64.sh "libssl-dev:arm64" pkg-config-aarch64-linux-gnu
           rustup target add aarch64-unknown-linux-gnu
@@ -164,7 +164,7 @@ jobs:
           echo "LIB_EXT=.so" >> $GITHUB_ENV
 
       - name: Set environment variables - Ubuntu - linux-arm64
-        if: ${{ startsWith(runner.os,'Linux') && matrix.builds.name != 'linux-arm64' }}
+        if: ${{ startsWith(runner.os,'Linux') && matrix.builds.name == 'linux-arm64' }}
         run: |
           echo "AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR=/usr/include/aarch64-linux-gnu/openssl/" >> $GITHUB_ENV
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
