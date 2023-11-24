@@ -118,7 +118,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo bash scripts/install_ubuntu_dependencies.sh
-          sudo apt-get install -y gcc-multilib
 
       - name: Install Linux dependencies - Ubuntu - linux-arm64
         if: ${{ (startsWith(runner.os,'Linux')) && (matrix.builds.name == 'linux-arm64') }}
