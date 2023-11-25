@@ -125,19 +125,6 @@ jobs:
           sudo bash scripts/install_ubuntu_dependencies-arm64.sh
           rustup target add aarch64-unknown-linux-gnu
           rustup toolchain install stable-aarch64-unknown-linux-gnu
-          # Big hack to get libssl-dev:arm64 on ubuntu 22.04 - https://askubuntu.com/questions/1255707/apt-cant-find-packages-on-ubuntu-20-04-arm64-raspberry-pi-4
-          cat << EOD | sudo tee -a /etc/apt/sources.list.d/ubuntu-ports-arm64.list
-deb [arch=arm64] http://ports.ubuntu.com/ jammy main multiverse universe
-deb [arch=arm64] http://ports.ubuntu.com/ jammy-security main multiverse universe
-deb [arch=arm64] http://ports.ubuntu.com/ jammy-backports main multiverse universe
-deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates main multiverse universe
-EOD
-          sudo dpkg --print-foreign-architectures
-          sudo dpkg --add-architecture arm64
-          sudo dpkg --print-foreign-architectures
-          # Not all repos have arm64 components, force true return
-          sudo apt-get update || true
-          sudo apt-get install -y libssl-dev:arm64
 
       - name: Install macOS dependencies
         if: startsWith(runner.os,'macOS')
