@@ -122,10 +122,22 @@ jobs:
       - name: Install Linux dependencies - Ubuntu - linux-arm64
         if: ${{ (startsWith(runner.os,'Linux')) && (matrix.builds.name == 'linux-arm64') }}
         run: |
-          # gcc-multilib
           sudo bash scripts/install_ubuntu_dependencies-arm64.sh
           rustup target add aarch64-unknown-linux-gnu
           rustup toolchain install stable-aarch64-unknown-linux-gnu
+          # Big hack to get libssl-dev:arm64 on ubuntu 22.04 - https://askubuntu.com/questions/1255707/apt-cant-find-packages-on-ubuntu-20-04-arm64-raspberry-pi-4
+          cat << EOD | sudo tee -a /etc/apt/sources.list.d/ubuntu-ports-arm64.list
+deb [arch=arm64] http://ports.ubuntu.com/ jammy main multiverse universe
+deb [arch=arm64] http://ports.ubuntu.com/ jammy-security main multiverse universe
+deb [arch=arm64] http://ports.ubuntu.com/ jammy-backports main multiverse universe
+deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates main multiverse universe
+EOD
+          sudo dpkg --print-foreign-architectures
+          sudo dpkg --add-architecture arm64
+          sudo dpkg --print-foreign-architectures
+          # Not all repos have arm64 components, force true return
+          sudo apt-get update || true
+          sudo apt-get install -y libssl-dev:arm64
 
       - name: Install macOS dependencies
         if: startsWith(runner.os,'macOS')
@@ -168,9 +180,12 @@ jobs:
       - name: Set environment variables - Ubuntu - linux-arm64
         if: ${{ startsWith(runner.os,'Linux') && matrix.builds.name == 'linux-arm64' }}
         run: |
-          #echo "AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR=/usr/include/aarch64-linux-gnu/openssl/" >> $GITHUB_ENV
-          #echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "Place holder"
+          # Need for openssl
+          echo "AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR=/usr/include/aarch64-linux-gnu/openssl/" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          # Needed for RandomX and tari-crypto
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=--sysroot /usr/aarch64-linux-gnu/include" >> $GITHUB_ENV
 
       - name: Set environment variables - Windows
         if: startsWith(runner.os,'Windows')
