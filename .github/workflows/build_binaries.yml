@@ -16,7 +16,7 @@ name: Build Matrix of Binaries
         required: true
         default: "development-tag"
       useCache:
-        description: "Use cache for quicker builds"
+        description: "Use build cache for quicker builds"
         required: true
         type: boolean
         default: true
@@ -46,10 +46,10 @@ jobs:
           #
           # build only single target image
           # matrix_selection=$( jq -c '.[] | select( ."name" == "windows-x64" )' ${{ env.matrix-json-file }} )
-          # matrix_selection=$( jq -c '.[] | select( ."name" | contains("linux") )' ${{ env.matrix-json-file }} )
+          matrix_selection=$( jq -c '.[] | select( ."name" | contains("linux") )' ${{ env.matrix-json-file }} )
           #
           # buid select target images - build_enabled
-          matrix_selection=$( jq -c '.[] | select( ."build_enabled" != false )' ${{ env.matrix-json-file }} )
+          # matrix_selection=$( jq -c '.[] | select( ."build_enabled" != false )' ${{ env.matrix-json-file }} )
           #
           # Setup the json build matrix
           matrix=$(echo ${matrix_selection} | jq -s -c '{"builds": .}')
@@ -199,9 +199,13 @@ jobs:
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $GITHUB_ENV
           echo "C:\Strawberry\perl\bin" >> $GITHUB_PATH
 
+      - name: Check build cache
+        run: |
+          echo "Use build cache -  ${{ inputs.useCache }}"
+
       # Don't use caches for binary builds. Start from a clean slate - on release
-      - name: Cache cargo files and outputs
-        if: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) && ( inputs.useCache == 'true' ) }}
+      - name: Cache cargo files and outputs - ${{ inputs.useCache }}
+        if: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) && ( inputs.useCache ) }}
         uses: Swatinem/rust-cache@v2
 
       - uses: actions/setup-node@v3
