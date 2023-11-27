@@ -15,6 +15,11 @@ name: Build Matrix of Binaries
         description: "Development Tag"
         required: true
         default: "development-tag"
+      useCache:
+        description: "Use cache for quicker builds"
+        required: true
+        type: boolean
+        default: true
 
 env:
   TN_FILENAME: "tari_network_suite"
@@ -196,7 +201,7 @@ jobs:
 
       # Don't use caches for binary builds. Start from a clean slate - on release
       - name: Cache cargo files and outputs
-        if: ${{ ! startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) || ( inputs.useCache == 'true' ) }}
         uses: Swatinem/rust-cache@v2
 
       - uses: actions/setup-node@v3
