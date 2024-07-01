@@ -13,8 +13,9 @@
     "rust": "1.77",
     "target": "aarch64-unknown-linux-gnu",
     "cross": true,
-    "features": "",
-    "build_enabled": false
+    "flags": "--workspace --exclude --exclude tari_integration_tests",
+    "build_enabled": true,
+    "best_effort": true
   },
   {
     "name": "linux-riscv64",
@@ -29,7 +30,7 @@
 
   {
     "name": "macos-x86_64",
-    "runs-on": "macos-11",
+    "runs-on": "macos-12",
     "rust": "1.77",
     "target": "x86_64-apple-darwin",
     "cross": false,
