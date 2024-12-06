@@ -87,11 +87,13 @@ impl TryFrom<proto::transaction::Transaction> for Transaction {
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()?;
+
         let filled_inputs = request
             .filled_inputs
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()?;
+
         let transaction = Transaction::new(
             request
                 .transaction
@@ -130,16 +132,19 @@ impl TryFrom<proto::transaction::UnsignedTransaction> for UnsignedTransaction {
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
+
         let fee_instructions = request
             .fee_instructions
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
+
         let inputs = request
             .inputs
             .into_iter()
             .map(TryInto::try_into)
             .collect::<Result<_, _>>()?;
+
         let min_epoch = request.min_epoch.map(|epoch| Epoch(epoch.epoch));
         let max_epoch = request.max_epoch.map(|epoch| Epoch(epoch.epoch));
         Ok(Self {
@@ -187,6 +192,7 @@ impl TryFrom<proto::transaction::Instruction> for Instruction {
             .collect::<Result<_, _>>()?;
         let instruction_type =
             InstructionType::try_from(request.instruction_type).map_err(|e| anyhow!("invalid instruction_type {e}"))?;
+
         let instruction = match instruction_type {
             InstructionType::CreateAccount => Instruction::CreateAccount {
                 public_key_address: PublicKey::from_canonical_bytes(&request.create_account_public_key)
@@ -252,6 +258,9 @@ impl TryFrom<proto::transaction::Instruction> for Instruction {
                     resource_address,
                     min_amount: Amount::new(request.min_amount),
                 }
+            },
+            InstructionType::PublishTemplate => Instruction::PublishTemplate {
+                binary: request.template_binary,
             },
         };
 
@@ -333,6 +342,10 @@ impl From<Instruction> for proto::transaction::Instruction {
                 result.key = key;
                 result.resource_address = resource_address.as_bytes().to_vec();
                 result.min_amount = min_amount.0
+            },
+            Instruction::PublishTemplate { binary } => {
+                result.instruction_type = InstructionType::PublishTemplate as i32;
+                result.template_binary = binary;
             },
         }
         result

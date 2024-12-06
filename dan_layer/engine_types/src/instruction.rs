@@ -68,6 +68,9 @@ pub enum Instruction {
         resource_address: ResourceAddress,
         min_amount: Amount,
     },
+    PublishTemplate {
+        binary: Vec<u8>,
+    },
 }
 
 impl Display for Instruction {
@@ -148,6 +151,9 @@ impl Display for Instruction {
                     "AssertBucketContains {{ key: {:?}, resource_address: {}, min_amount: {} }}",
                     key, resource_address, min_amount
                 )
+            },
+            Instruction::PublishTemplate { .. } => {
+                write!(f, "PublishTemplate")
             },
         }
     }

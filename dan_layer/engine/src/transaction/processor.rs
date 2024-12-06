@@ -42,7 +42,7 @@ use tari_template_builtin::ACCOUNT_TEMPLATE_ADDRESS;
 use tari_template_lib::{
     arg,
     args,
-    args::{Arg, WorkspaceAction},
+    args::{Arg, LogLevel, WorkspaceAction},
     auth::OwnerRule,
     crypto::RistrettoPublicKeyBytes,
     invoke_args,
@@ -66,38 +66,80 @@ use crate::{
     template::LoadedTemplate,
     traits::Invokable,
     transaction::TransactionError,
-    wasm::WasmProcess,
+    wasm::{WasmModule, WasmProcess},
 };
 
 const LOG_TARGET: &str = "tari::dan::engine::instruction_processor";
 pub const MAX_CALL_DEPTH: usize = 10;
 const ACCOUNT_CONSTRUCTOR_FUNCTION: &str = "create";
 
+#[derive(Clone, Debug)]
+pub struct TransactionProcessorConfig {
+    pub network: Network,
+    pub template_binary_max_size_bytes: usize,
+}
+
+impl TransactionProcessorConfig {
+    pub fn builder() -> TransactionProcessorConfigBuilder {
+        TransactionProcessorConfigBuilder::default()
+    }
+}
+
+impl Default for TransactionProcessorConfig {
+    fn default() -> Self {
+        Self {
+            network: Default::default(),
+            template_binary_max_size_bytes: 1000 * 1000 * 5, // 5MB
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct TransactionProcessorConfigBuilder {
+    config: TransactionProcessorConfig,
+}
+
+impl TransactionProcessorConfigBuilder {
+    pub fn with_network(&mut self, network: Network) -> &mut Self {
+        self.config.network = network;
+        self
+    }
+
+    pub fn with_template_binary_max_size_bytes(&mut self, max_size: usize) -> &mut Self {
+        self.config.template_binary_max_size_bytes = max_size;
+        self
+    }
+
+    pub fn build(&self) -> TransactionProcessorConfig {
+        self.config.clone()
+    }
+}
+
 pub struct TransactionProcessor<TTemplateProvider> {
+    config: TransactionProcessorConfig,
     template_provider: Arc<TTemplateProvider>,
     state_db: ReadOnlyMemoryStateStore,
     auth_params: AuthParams,
     virtual_substates: VirtualSubstates,
     modules: Vec<Arc<dyn RuntimeModule>>,
-    network: Network,
 }
 
 impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> TransactionProcessor<TTemplateProvider> {
     pub fn new(
+        config: TransactionProcessorConfig,
         template_provider: Arc<TTemplateProvider>,
         state_db: ReadOnlyMemoryStateStore,
         auth_params: AuthParams,
         virtual_substates: VirtualSubstates,
         modules: Vec<Arc<dyn RuntimeModule>>,
-        network: Network,
     ) -> Self {
         Self {
+            config,
             template_provider,
             state_db,
             auth_params,
             virtual_substates,
             modules,
-            network,
         }
     }
 
@@ -105,12 +147,12 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
         let timer = Instant::now();
         let entity_id_provider = EntityIdProvider::new(transaction.hash(), 1000);
         let Self {
+            config,
             template_provider,
             state_db,
             auth_params,
             virtual_substates,
             modules,
-            network,
         } = self;
 
         let initial_auth_scope = AuthorizationScope::new(auth_params.initial_ownership_proofs);
@@ -141,7 +183,7 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
             entity_id_provider,
             modules,
             MAX_CALL_DEPTH,
-            network,
+            config.network,
         )?;
 
         let runtime = Runtime::new(Arc::new(runtime_interface));
@@ -149,7 +191,7 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
 
         let (fee_instructions, instructions) = transaction.into_instructions();
 
-        let fee_exec_results = Self::process_instructions(&template_provider, &runtime, fee_instructions);
+        let fee_exec_results = Self::process_instructions(&config, &template_provider, &runtime, fee_instructions);
 
         let fee_exec_result = match fee_exec_results {
             Ok(execution_results) => {
@@ -177,7 +219,7 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
             },
         };
 
-        let instruction_result = Self::process_instructions(&*template_provider, &runtime, instructions);
+        let instruction_result = Self::process_instructions(&config, &*template_provider, &runtime, instructions);
 
         match instruction_result {
             Ok(execution_results) => {
@@ -217,13 +259,14 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
     }
 
     fn process_instructions(
+        config: &TransactionProcessorConfig,
         template_provider: &TTemplateProvider,
         runtime: &Runtime,
         instructions: Vec<Instruction>,
     ) -> Result<Vec<InstructionResult>, TransactionError> {
         let result: Result<_, _> = instructions
             .into_iter()
-            .map(|instruction| Self::process_instruction(template_provider, runtime, instruction))
+            .map(|instruction| Self::process_instruction(config, template_provider, runtime, instruction))
             .collect();
 
         // check that the finalized state is valid
@@ -235,6 +278,7 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
     }
 
     fn process_instruction(
+        config: &TransactionProcessorConfig,
         template_provider: &TTemplateProvider,
         runtime: &Runtime,
         instruction: Instruction,
@@ -303,6 +347,7 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
                 )?;
                 Ok(InstructionResult::empty())
             },
+            Instruction::PublishTemplate { binary } => Self::publish_template(config, runtime, binary),
         }
     }
 
@@ -318,6 +363,28 @@ impl<TTemplateProvider: TemplateProvider<Template = LoadedTemplate> + 'static> T
             .interface()
             .workspace_invoke(WorkspaceAction::DropAllProofs, invoke_args![].into())?;
         Ok(())
+    }
+
+    /// Load, validate template binary and adds to the cache of TemplateProvider.
+    pub fn publish_template(
+        config: &TransactionProcessorConfig,
+        runtime: &Runtime,
+        binary: Vec<u8>,
+    ) -> Result<InstructionResult, TransactionError> {
+        if binary.len() > config.template_binary_max_size_bytes {
+            return Err(TransactionError::WasmBinaryTooBig(
+                binary.len(),
+                config.template_binary_max_size_bytes,
+            ));
+        }
+        let template = WasmModule::load_template_from_code(binary.as_slice())?;
+        // TODO: delete debug log when implemented
+        runtime.interface().emit_log(
+            LogLevel::Debug,
+            format!("Template name: \"{}\"", template.template_name()),
+        )?;
+        // TODO: implement
+        Ok(InstructionResult::empty())
     }
 
     pub fn create_account(
