@@ -247,7 +247,7 @@ where TConsensusSpec: ConsensusSpec
         if local_committee_info.num_shard_group_members() <= 1 {
             info!(
                 target: LOG_TARGET,
-            "🌿 Only member of local committee. No need to multicast proposal {leaf_block}",
+                "🌿 This node is the only member of the local committee. No need to multicast proposal {leaf_block}",
             );
         } else {
             let committee = self
@@ -516,6 +516,10 @@ where TConsensusSpec: ConsensusSpec
                     .and_then(|tx| tx.leader_fee.as_ref())
                     .map(|f| f.fee)
                     .unwrap_or(0);
+                // TODO: a BTreeSet changes the order from the original batch. Uncertain if this is a problem since the
+                // proposer also processes transactions in the completed block order, however on_propose does perform
+                // some operations (e.g. prepare, execute) in batch order. To ensure safety, we should process
+                // on_propose in canonical order.
                 commands.insert(command);
             }
         }
@@ -860,16 +864,25 @@ where TConsensusSpec: ConsensusSpec
             return Ok(Some(Command::SomePrepare(tx_rec.get_current_transaction_atom())));
         }
 
-        let mut execution =
-            self.execute_transaction(tx, &parent_block.block_id, parent_block.epoch, tx_rec.transaction_id())?;
+        let transaction = TransactionRecord::get(tx, tx_rec.transaction_id())?;
+        if !transaction.has_all_required_input_pledges(tx, local_committee_info)? {
+            // TODO: investigate - this case does occur when all_input_shard_groups_prepared is used vs
+            //       all_shard_groups_prepared in can_continue_to, not sure why.
+            error!(
+                target: LOG_TARGET,
+                "BUG: attempted to propose transaction {} as AllPrepared but not all input pledges were found. This transaction should not have been marked as ready.",
+                tx_rec.transaction_id(),
+            );
+            return Ok(None);
+        }
+        let mut execution = self.execute_transaction(tx, &parent_block.block_id, parent_block.epoch, transaction)?;
 
         // Try to lock all local outputs
         let local_outputs = execution
             .resulting_outputs()
             .iter()
             .filter(|o| {
-                o.substate_id().is_transaction_receipt() ||
-                    local_committee_info.includes_substate_address(&o.to_substate_address())
+                o.substate_id().is_transaction_receipt() || local_committee_info.includes_substate_id(o.substate_id())
             })
             .map(|output| SubstateRequirementLockIntent::from(output.clone()));
         let lock_status = substate_store.try_lock_all(*tx_rec.transaction_id(), local_outputs, false)?;
@@ -963,17 +976,16 @@ where TConsensusSpec: ConsensusSpec
         tx: &<TConsensusSpec::StateStore as StateStore>::ReadTransaction<'_>,
         parent_block_id: &BlockId,
         current_epoch: Epoch,
-        transaction_id: &TransactionId,
+        transaction: TransactionRecord,
     ) -> Result<TransactionExecution, HotStuffError> {
-        let transaction = TransactionRecord::get(tx, transaction_id)?;
         // Might have been executed already if all inputs are local
         if let Some(execution) =
-            BlockTransactionExecution::get_pending_for_block(tx, transaction_id, parent_block_id).optional()?
+            BlockTransactionExecution::get_pending_for_block(tx, transaction.id(), parent_block_id).optional()?
         {
             info!(
                 target: LOG_TARGET,
                 "👨‍🔧 PROPOSE: Using existing transaction execution {} ({})",
-                transaction_id, execution.execution.decision(),
+                transaction.id(), execution.execution.decision(),
             );
             return Ok(execution.into_transaction_execution());
         }
@@ -983,7 +995,7 @@ where TConsensusSpec: ConsensusSpec
         info!(
             target: LOG_TARGET,
             "👨‍🔧 PROPOSE: Executing transaction {} (pledges: {} local, {} foreign)",
-            transaction_id, pledged.local_pledges.len(), pledged.foreign_pledges.len(),
+            pledged.id(), pledged.local_pledges.len(), pledged.foreign_pledges.len(),
         );
 
         let executed = self

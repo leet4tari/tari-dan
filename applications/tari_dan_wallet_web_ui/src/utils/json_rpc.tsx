@@ -43,6 +43,8 @@ import type {
   ConfidentialTransferResponse,
   ConfidentialViewVaultBalanceRequest,
   ConfidentialViewVaultBalanceResponse,
+  PublishTemplateRequest,
+  PublishTemplateResponse,
   KeysCreateRequest,
   KeysCreateResponse,
   KeysListRequest,
@@ -98,7 +100,12 @@ export async function getClientAddress(): Promise<URL> {
   try {
     let resp = await fetch("/json_rpc_address");
     if (resp.status === 200) {
-      return new URL(await resp.text());
+      const url = await resp.text();
+      try {
+        return new URL(url);
+      } catch (e) {
+        throw new Error(`Invalid URL: ${url} : {e}`);
+      }
     }
   } catch (e) {
     console.warn(e);
@@ -172,6 +179,8 @@ export const transactionsWaitResult = (request: TransactionWaitResultRequest): P
 export const transactionsGetAll = (request: TransactionGetAllRequest): Promise<TransactionGetAllResponse> =>
   client().then((c) => c.transactionsList(request));
 
+export const transactionsPublishTemplate = (request: PublishTemplateRequest): Promise<PublishTemplateResponse> =>
+  client().then((c) => c.publishTemplate(request));
 // accounts
 
 export const accountsRevealFunds = (request: RevealFundsRequest): Promise<RevealFundsResponse> =>
@@ -180,6 +189,7 @@ export const accountsClaimBurn = (request: ClaimBurnRequest): Promise<ClaimBurnR
   client().then((c) => c.accountsClaimBurn(request));
 export const accountsCreate = (request: AccountsCreateRequest): Promise<AccountsCreateResponse> =>
   client().then((c) => c.accountsCreate(request));
+
 export const accountsList = (request: AccountsListRequest): Promise<AccountsListResponse> =>
   client().then((c) => c.accountsList(request));
 export const accountsGetBalances = (request: AccountsGetBalancesRequest): Promise<AccountsGetBalancesResponse> =>

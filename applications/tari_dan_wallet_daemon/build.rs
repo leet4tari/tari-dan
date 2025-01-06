@@ -29,9 +29,9 @@ fn exit_on_ci() {
 }
 
 const BUILD: &[(&str, &[&str])] = &[
-    ("../../bindings", &["ci"]),
-    ("../../bindings", &["run", "tsc"]),
-    ("../../clients/javascript/wallet_daemon_client", &["ci"]),
+    ("../../bindings", &["install"]),
+    ("../../bindings", &["run", "ts-build"]),
+    ("../../clients/javascript/wallet_daemon_client", &["install"]),
     ("../../clients/javascript/wallet_daemon_client", &["run", "build"]),
     ("../tari_dan_wallet_web_ui", &["run", "build"]),
 ];
@@ -48,8 +48,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let npm = if cfg!(windows) { "npm.cmd" } else { "npm" };
 
     for (target, args) in BUILD {
-        if let Err(error) = Command::new(npm).arg("ci").current_dir(target).status() {
-            println!("cargo:warning='npm ci' error : {:?}", error);
+        if let Err(error) = Command::new(npm).args(["install"]).current_dir(target).status() {
+            println!("cargo:warning='npm install' error : {:?}", error);
             exit_on_ci();
             break;
         }

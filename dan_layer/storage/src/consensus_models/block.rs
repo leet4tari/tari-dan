@@ -293,11 +293,7 @@ impl Block {
         self.commands
             .iter()
             .filter_map(|cmd| cmd.transaction())
-            .filter(|t| {
-                t.evidence
-                    .shard_groups_iter()
-                    .any(|sg| *sg == committee_info.shard_group())
-            })
+            .filter(|t| t.evidence.has_and_not_empty(&committee_info.shard_group()))
             .map(|t| t.id())
     }
 
@@ -804,6 +800,27 @@ impl Block {
         Ok(found)
     }
 
+    /// Returns the transactions that are/will be committed by this block when this block.
+    pub fn get_committing_transactions<TTx: StateStoreReadTransaction>(
+        &self,
+        tx: &TTx,
+    ) -> Result<Vec<TransactionRecord>, StorageError> {
+        let tx_ids = self.commands().iter().filter_map(|t| t.committing()).map(|t| t.id());
+        let (found, missing) = TransactionRecord::get_any(tx, tx_ids)?;
+        if !missing.is_empty() {
+            return Err(StorageError::NotFound {
+                item: "Transaction (get_committed_transactions)",
+                key: missing
+                    .into_iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            });
+        }
+
+        Ok(found)
+    }
+
     pub fn get_substate_updates<TTx: StateStoreReadTransaction>(
         &self,
         tx: &TTx,
@@ -1000,7 +1017,7 @@ impl Block {
             // atom, so we need to exclude them.
             let locks = locked_values
                 .into_iter()
-                .filter(|lock| evidence.contains(&lock.to_substate_address()));
+                .filter(|lock| evidence.contains(lock.substate_id()));
 
             pledges.reserve(locks.clone().count());
             for locked_value in locks {

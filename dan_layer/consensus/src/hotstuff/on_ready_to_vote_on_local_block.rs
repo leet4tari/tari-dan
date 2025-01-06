@@ -149,9 +149,9 @@ where TConsensusSpec: ConsensusSpec
             // Update nodes
             let high_qc = valid_block.block().update_nodes(
                 tx,
-                |tx, _prev_locked, block, justify_qc| {
+                |tx, _prev_locked, block, _justify_qc| {
                     if !block.is_dummy() {
-                        locked_blocks.push((block.clone(), justify_qc.clone()));
+                        locked_blocks.push(block.clone());
                     }
                     self.on_lock_block(tx, block)
                 },
@@ -243,13 +243,14 @@ where TConsensusSpec: ConsensusSpec
                 );
                 pool_tx.add_prepare_qc_evidence(local_committee_info, justify_id);
             } else if cmd.is_local_accept() {
+                pool_tx.add_accept_qc_evidence(local_committee_info, justify_id);
                 debug!(
                     target: LOG_TARGET,
-                    "🔍 Updating evidence for LocalAccept command in block {} for transaction {}",
+                    "🔍 Updating evidence for LocalAccept command in block {} for transaction {}. {:#}",
                     leaf,
                     atom.id(),
+                    pool_tx.evidence()
                 );
-                pool_tx.add_accept_qc_evidence(local_committee_info, justify_id);
             } else {
                 // Nothing
             }
@@ -987,14 +988,14 @@ where TConsensusSpec: ConsensusSpec
             }));
         }
 
-        if !tx_rec.evidence().all_inputs_prepared() {
+        if !tx_rec.evidence().all_input_shard_groups_prepared() {
             warn!(
                 target: LOG_TARGET,
-                "❌ NO VOTE: AllPrepare disagreement for transaction {} in block {}. Leader proposed that all inputs are justified, but not all inputs are justified",
+                "❌ NO VOTE: AllPrepare disagreement for transaction {} in block {}. Leader proposed that all shard groups have prepared, but this is not the case",
                 tx_rec.transaction_id(),
                 block,
             );
-            return Ok(Some(NoVoteReason::NotAllInputsPrepared));
+            return Ok(Some(NoVoteReason::NotAllShardGroupsPrepared));
         }
 
         let maybe_execution = if tx_rec.current_decision().is_commit() {
@@ -1002,7 +1003,7 @@ where TConsensusSpec: ConsensusSpec
             // requested for a read-locked substate.
 
             let transaction = tx_rec.get_transaction(tx)?;
-            if !transaction.has_all_foreign_input_pledges(tx, local_committee_info)? {
+            if !transaction.has_all_required_input_pledges(tx, local_committee_info)? {
                 warn!(
                     target: LOG_TARGET,
                     "❌ NO VOTE AllPrepare: transaction {} in block {} has not received all foreign input pledges",
@@ -1029,7 +1030,7 @@ where TConsensusSpec: ConsensusSpec
                 // Lock all local outputs
                 let local_outputs = execution.resulting_outputs().iter().filter(|o| {
                     o.substate_id().is_transaction_receipt() ||
-                        local_committee_info.includes_substate_address(&o.to_substate_address())
+                        local_committee_info.includes_substate_id(o.substate_id())
                 });
                 let lock_status = substate_store.try_lock_all(*tx_rec.transaction_id(), local_outputs, false)?;
                 if let Some(err) = lock_status.failures().first() {
