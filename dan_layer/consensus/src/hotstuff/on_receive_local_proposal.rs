@@ -367,7 +367,6 @@ impl<TConsensusSpec: ConsensusSpec> OnReceiveLocalProposalHandler<TConsensusSpec
                 self.store.with_write_tx(|tx| {
                     // Generate checkpoint
                     create_epoch_checkpoint(tx, epoch, local_committee_info.shard_group())?;
-
                     // Create the next genesis
                     let mut genesis = Block::genesis(
                         self.config.network,

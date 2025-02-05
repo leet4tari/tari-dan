@@ -169,6 +169,13 @@ impl SubstateId {
         }
     }
 
+    pub fn as_transaction_receipt_address(&self) -> Option<TransactionReceiptAddress> {
+        match self {
+            Self::TransactionReceipt(address) => Some(*address),
+            _ => None,
+        }
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         encode(self).unwrap()
     }
@@ -269,12 +276,12 @@ impl SubstateId {
         matches!(self, Self::TransactionReceipt(_))
     }
 
-    pub fn is_published_template(&self) -> bool {
+    pub fn is_template(&self) -> bool {
         matches!(self, Self::Template(_))
     }
 
     pub fn is_global(&self) -> bool {
-        self.is_published_template()
+        self.is_template()
     }
 
     pub fn is_read_only(&self) -> bool {
