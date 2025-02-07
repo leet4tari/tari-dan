@@ -6,7 +6,7 @@ use std::{borrow::Cow, collections::HashMap, fmt::Display};
 use indexmap::IndexMap;
 use log::*;
 use tari_dan_common_types::{
-    option::Displayable,
+    displayable::Displayable,
     optional::Optional,
     LockIntent,
     NumPreshards,
@@ -104,11 +104,9 @@ impl<'a, 'tx, TStore: StateStore + 'a + 'tx> WriteableSubstateStore for PendingS
                 if let Some(v) = id.to_previous_version() {
                     self.assert_is_down(&v)?;
                 }
-                // self.assert_has_lock(id, SubstateLockFlag::Output)?;
             },
             SubstateChange::Down { id, .. } => {
                 self.assert_is_up(id)?;
-                // self.assert_has_lock(id, SubstateLockFlag::Write)?;
             },
         }
 
@@ -120,7 +118,7 @@ impl<'a, 'tx, TStore: StateStore + 'a + 'tx> WriteableSubstateStore for PendingS
     fn put_diff(&mut self, transaction_id: TransactionId, diff: &SubstateDiff) -> Result<(), Self::Error> {
         for (id, version) in diff.down_iter() {
             let id = VersionedSubstateId::new(id.clone(), *version);
-            let shard = id.to_substate_address().to_shard(self.num_preshards);
+            let shard = id.to_shard(self.num_preshards);
             debug!(target: LOG_TARGET, "🔽️ Down: {id} {shard}");
             self.put(SubstateChange::Down {
                 id,
@@ -131,7 +129,7 @@ impl<'a, 'tx, TStore: StateStore + 'a + 'tx> WriteableSubstateStore for PendingS
 
         for (id, substate) in diff.up_iter() {
             let id = VersionedSubstateId::new(id.clone(), substate.version());
-            let shard = id.to_substate_address().to_shard(self.num_preshards);
+            let shard = id.to_shard(self.num_preshards);
             debug!(target: LOG_TARGET, "🔼️ Up: {id} {shard} value hash: {}", substate.to_value_hash());
             self.put(SubstateChange::Up {
                 id,

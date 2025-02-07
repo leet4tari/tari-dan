@@ -12,13 +12,12 @@ use tari_common_types::types::{FixedHash, PublicKey};
 use tari_crypto::tari_utilities::epoch_time::EpochTime;
 use tari_dan_common_types::{
     committee::{Committee, CommitteeInfo},
-    option::Displayable,
+    displayable::Displayable,
     optional::Optional,
     shard::Shard,
     Epoch,
     ExtraData,
     NodeHeight,
-    ToSubstateAddress,
     VersionedSubstateId,
 };
 use tari_dan_storage::{
@@ -586,7 +585,7 @@ where TConsensusSpec: ConsensusSpec
         // This relies on the UTXO commands being ordered after transaction commands
         for utxo in batch.burnt_utxos {
             let id = VersionedSubstateId::new(utxo.commitment, 0);
-            let shard = id.to_substate_address().to_shard(local_committee_info.num_preshards());
+            let shard = id.to_shard(local_committee_info.num_preshards());
             let change = SubstateChange::Up {
                 id,
                 shard,
@@ -1105,7 +1104,6 @@ pub fn get_non_local_shards(diff: &[SubstateChange], local_committee_info: &Comm
     diff.iter()
         .map(|ch| {
             ch.versioned_substate_id()
-                .to_substate_address()
                 .to_shard(local_committee_info.num_preshards())
         })
         .filter(|shard| local_committee_info.shard_group().contains(shard))

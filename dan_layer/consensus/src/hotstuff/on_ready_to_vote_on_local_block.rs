@@ -7,11 +7,11 @@ use log::*;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_dan_common_types::{
     committee::CommitteeInfo,
-    option::Displayable,
+    displayable::Displayable,
     optional::Optional,
+    shard::Shard,
     Epoch,
     ShardGroup,
-    ToSubstateAddress,
     VersionedSubstateId,
 };
 use tari_dan_storage::{
@@ -568,8 +568,8 @@ where TConsensusSpec: ConsensusSpec
             substate_store
                 .diff()
                 .iter()
-                // Calculate for local shards only
-                .filter(|ch| block.shard_group().contains(&ch.shard())),
+                // Calculate for local shards only AND global shard
+                .filter(|ch| block.shard_group().contains(&ch.shard()) || ch.shard() == Shard::global()),
         )?;
         if expected_merkle_root != *block.state_merkle_root() {
             warn!(
@@ -1870,7 +1870,7 @@ where TConsensusSpec: ConsensusSpec
             return Ok(Some(NoVoteReason::MintConfidentialOutputUnknown));
         };
         let id = VersionedSubstateId::new(utxo.commitment, 0);
-        let shard = id.to_substate_address().to_shard(local_committee_info.num_preshards());
+        let shard = id.to_shard(local_committee_info.num_preshards());
         let change = SubstateChange::Up {
             id,
             shard,

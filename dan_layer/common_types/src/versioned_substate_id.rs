@@ -7,7 +7,7 @@ use borsh::BorshSerialize;
 use serde::{Deserialize, Serialize};
 use tari_engine_types::{substate::SubstateId, transaction_receipt::TransactionReceiptAddress};
 
-use crate::{option::Displayable, shard::Shard, NumPreshards, ShardGroup, SubstateAddress, ToSubstateAddress};
+use crate::{displayable::Displayable, shard::Shard, NumPreshards, ShardGroup, SubstateAddress, ToSubstateAddress};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[cfg_attr(
@@ -190,6 +190,15 @@ impl<'a> SubstateRequirementRef<'a> {
         SubstateRequirement::new(self.substate_id.clone(), self.version)
     }
 
+    pub fn with_version(self, version: u32) -> VersionedSubstateIdRef<'a> {
+        VersionedSubstateIdRef::new(self.substate_id, version)
+    }
+
+    pub fn or_zero_version(self) -> VersionedSubstateIdRef<'a> {
+        let v = self.version.unwrap_or(0);
+        self.with_version(v)
+    }
+
     pub fn version(&self) -> Option<u32> {
         self.version
     }
@@ -297,6 +306,13 @@ impl VersionedSubstateId {
 
     pub fn version(&self) -> u32 {
         self.version
+    }
+
+    pub fn to_shard(&self, num_preshards: NumPreshards) -> Shard {
+        if self.substate_id.is_global() {
+            return Shard::global();
+        }
+        self.to_substate_address().to_shard(num_preshards)
     }
 
     pub fn to_previous_version(&self) -> Option<Self> {
