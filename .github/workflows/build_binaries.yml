@@ -116,7 +116,9 @@ jobs:
         shell: bash
         run: |
           echo "VBRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
-          echo "VSHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          VSHA_SHORT=$(git rev-parse --short HEAD)
+          echo "VSHA_SHORT=${VSHA_SHORT}" >> $GITHUB_ENV
+          echo "VSHA_SHORT=${VSHA_SHORT}" >> $GITHUB_OUTPUT
           TARI_VERSION=$(awk -F ' = ' '$1 ~ /^version/ \
             { gsub(/["]/, "", $2); printf("%s",$2) }' \
             "$GITHUB_WORKSPACE/Cargo.toml")
