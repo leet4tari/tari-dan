@@ -97,8 +97,8 @@ jobs:
     needs: matrix-prep
     continue-on-error: ${{ matrix.builds.best_effort || false }}
     outputs:
-      TARI_NETWORK_DIR: ${{ steps.set-tari-network.outputs.TARI_NETWORK_DIR }}
       TARI_VERSION: ${{ steps.set-tari-vars.outputs.TARI_VERSION }}
+      VSHA_SHORT: ${{ steps.set-tari-vars.outputs.VSHA_SHORT }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix-prep.outputs.matrix) }}
@@ -119,7 +119,7 @@ jobs:
           echo "VSHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           TARI_VERSION=$(awk -F ' = ' '$1 ~ /^version/ \
             { gsub(/["]/, "", $2); printf("%s",$2) }' \
-            "$GITHUB_WORKSPACE/applications/tari_validator_node/Cargo.toml")
+            "$GITHUB_WORKSPACE/Cargo.toml")
           echo "TARI_VERSION=${TARI_VERSION}" >> $GITHUB_ENV
           echo "TARI_VERSION=${TARI_VERSION}" >> $GITHUB_OUTPUT
           if [[ "${{ matrix.builds.features }}" == "" ]]; then
