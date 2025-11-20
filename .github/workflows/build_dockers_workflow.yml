@@ -283,70 +283,60 @@ jobs:
 
                 # --annotation quay.expires-after="${{ env.EXPIRATION }}"
 
+                # Convert GitHub expressions into shell variables first
+                GH_REPO="${{ github.repository }}"
+                GH_ACTOR="${{ github.actor }}"
+                GH_SHA="${{ github.sha }}"
+
                 DANNOTATIONS=(
-                  --annotation org.opencontainers.image.title="${DNAME}"
-                  --annotation org.opencontainers.image.vendor="TariLabs"
-                  --annotation org.opencontainers.image.description="Tari OOTLE docker image"
-                  --annotation org.opencontainers.image.url="https://github.com/${{ github.repository }}"
-                  --annotation org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-                  --annotation org.opencontainers.image.version="${DVERSION}"
-                  --annotation org.opencontainers.image.licenses="BSD-3-Clause"
-                  --annotation org.opencontainers.image.revision="${GITHUB_SHA}"
-                  --annotation maintainer="${{ github.actor }}"
+                  --annotation "index:org.opencontainers.image.title=${DNAME}"
+                  --annotation "index:org.opencontainers.image.vendor=TariLabs"
+                  --annotation "index:org.opencontainers.image.description=Tari OOTLE docker image"
+                  --annotation "index:org.opencontainers.image.url=https://github.com/${GH_REPO}"
+                  --annotation "index:org.opencontainers.image.source=https://github.com/${GH_REPO}"
+                  --annotation "index:org.opencontainers.image.version=${DVERSION}"
+                  --annotation "index:org.opencontainers.image.licenses=BSD-3-Clause"
+                  --annotation "index:org.opencontainers.image.revision=${GH_SHA}"
+                  --annotation "index:maintainer=${GH_ACTOR}"
                 )
 
                 echo "Registry run - ${DREGISTRY}"
                 echo "Creating multi-arch image for ${REPO}/${DNAME} for ${DVERSION}${DSUFFIX}"
-                docker manifest create \
-                  ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
-                    --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
-                    --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
-
-                docker manifest annotate \
-                  ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
-                    ${DANNOTATIONS[@]}
+                docker buildx imagetools create \
+                  --tag ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
+                    ${DANNOTATIONS[@]} \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
 
                 echo "Inspect multi-arch image for ${REPO}/${DNAME}"
                 docker manifest inspect ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} > manifest.json
                 cat manifest.json
-                echo "Pushing multi-arch image for ${REPO}/${DNAME}"
-                docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} || true
 
                 if [[ "${{ inputs.tag_alias }}" =~ ^latest-.*$ ]]; then
                   echo "Latest Alias Multi-Arch tag - ${{ inputs.tag_alias }}"
-                  docker manifest create \
-                    ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} \
-                      --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
-                      --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
-                  docker manifest annotate \
-                    ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} \
-                      ${DANNOTATIONS[@]}
-                  docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} || true
+                  docker buildx imagetools create \
+                    --tag ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} \
+                      ${DANNOTATIONS[@]} \
+                      ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                      ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
                 fi
 
                 if [[ "${GITHUB_REF}" =~ ^refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
                   echo "Release Multi-Arch Tag - ${GITHUB_REF_NAME} for ${GITHUB_REF}"
-                  docker manifest create \
-                    ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} \
-                      --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
-                      --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
-                  docker manifest annotate \
-                    ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} \
-                      ${DANNOTATIONS[@]}
-                  docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} || true
+                  docker buildx imagetools create \
+                    --tag ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} \
+                      ${DANNOTATIONS[@]} \
+                      ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                      ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64  || true
                 fi
 
                 if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
                   echo "Latest Release Multi-Arch tag - $GITHUB_REF_NAME for $GITHUB_REF using ${DVERSION}${DSUFFIX}"
-                  docker manifest create \
-                    ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} \
-                      --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
-                      --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
-                  docker manifest annotate \
-                    ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} \
-                      ${DANNOTATIONS[@]}
-                  #docker manifest annotate ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} --file manifest.json
-                  docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} || true
+                  docker buildx imagetools create \
+                    --tag ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} \
+                      ${DANNOTATIONS[@]} \
+                      ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                      ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
                 fi
               done
             done
