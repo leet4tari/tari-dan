@@ -283,7 +283,7 @@ jobs:
 
                 # --annotation quay.expires-after="${{ env.EXPIRATION }}"
 
-                DANNOTATIONS=$(cat <<EOF
+                DANNOTATIONS=(
                   --annotation org.opencontainers.image.title="${DNAME}"
                   --annotation org.opencontainers.image.vendor="TariLabs"
                   --annotation org.opencontainers.image.description="Tari OOTLE docker image"
@@ -293,7 +293,6 @@ jobs:
                   --annotation org.opencontainers.image.licenses="BSD-3-Clause"
                   --annotation org.opencontainers.image.revision="${GITHUB_SHA}"
                   --annotation maintainer="${{ github.actor }}"
-                EOF
                 )
 
                 echo "Registry run - ${DREGISTRY}"
@@ -305,7 +304,7 @@ jobs:
 
                 docker manifest annotate \
                   ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
-                    ${DANNOTATIONS}
+                    ${DANNOTATIONS[@]}
 
                 echo "Inspect multi-arch image for ${REPO}/${DNAME}"
                 docker manifest inspect ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} > manifest.json
@@ -321,7 +320,7 @@ jobs:
                       --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
                   docker manifest annotate \
                     ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} \
-                      ${DANNOTATIONS}
+                      ${DANNOTATIONS[@]}
                   docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} || true
                 fi
 
@@ -333,7 +332,7 @@ jobs:
                       --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
                   docker manifest annotate \
                     ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} \
-                      ${DANNOTATIONS}
+                      ${DANNOTATIONS[@]}
                   docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} || true
                 fi
 
@@ -345,7 +344,7 @@ jobs:
                       --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
                   docker manifest annotate \
                     ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} \
-                      ${DANNOTATIONS}
+                      ${DANNOTATIONS[@]}
                   #docker manifest annotate ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} --file manifest.json
                   docker manifest push ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} || true
                 fi
