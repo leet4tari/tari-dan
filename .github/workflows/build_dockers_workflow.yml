@@ -288,17 +288,18 @@ jobs:
                     --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
                     --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
 
-               # maintainer=${{ github.actor }}
-               # quay.expires-after=${{ env.EXPIRATION }}
-
                 docker manifest annotate \
                   ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
                     --annotation org.opencontainers.image.vendor="TariLabs" \
                     --annotation org.opencontainers.image.title="ootle" \
                     --annotation org.opencontainers.image.description="Tari OOTLE docker image" \
                     --annotation org.opencontainers.image.url="https://github.com/${{ github.repository }}" \
-                    --annotation org.opencontainers.image.source="${GIT_URL}" \
-                    --annotation org.opencontainers.image.version="${GIT_SHA}"
+                    --annotation org.opencontainers.image.source="https://github.com/${{ github.repository }}" \
+                    --annotation org.opencontainers.image.version="${DVERSION}" \
+                    --annotation org.opencontainers.image.licenses="BSD-3-Clause" \
+                    --annotation org.opencontainers.image.revision="${GITHUB_SHA}" \
+                    --annotation maintainer="${{ github.actor }}"" \
+                    --annotation quay.expires-after="${{ env.EXPIRATION }}""
 
                 echo "Inspect multi-arch image for ${REPO}/${DNAME}"
                 docker manifest inspect ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} > manifest.json
