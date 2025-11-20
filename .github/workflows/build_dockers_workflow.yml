@@ -140,7 +140,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+          # DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest
         with:
           images: |
             # name/${{ matrix.builds.image_name }}
