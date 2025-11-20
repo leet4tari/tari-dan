@@ -246,11 +246,11 @@ jobs:
           mapfile -t multiarch_images < <(
             echo '${{ env.BMATRIX }}' | jq -r '
               .builds
-                | group_by([.image_name, .tari_network])
+                | group_by([.image_name])
                 | map(select((map(.arch) | index("amd64")) and (map(.arch) | index("arm64"))))
-                | map({image_name: .[0].image_name, version: .[0].version, tari_network: .[0].tari_network})
+                | map({image_name: .[0].image_name, version: .[0].version})
                 | unique
-                | map("\(.image_name):\(.version):\(.tari_network)")
+                | map("\(.image_name):\(.version)")
                 | .[]
               '
             )
@@ -287,6 +287,18 @@ jobs:
                   ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
                     --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
                     --amend ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64
+
+               # maintainer=${{ github.actor }}
+               # quay.expires-after=${{ env.EXPIRATION }}
+
+                docker manifest annotate \
+                  ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
+                    --annotation org.opencontainers.image.vendor="TariLabs" \
+                    --annotation org.opencontainers.image.title="ootle" \
+                    --annotation org.opencontainers.image.description="Tari OOTLE docker image" \
+                    --annotation org.opencontainers.image.url="https://github.com/${{ github.repository }}" \
+                    --annotation org.opencontainers.image.source="${GIT_URL}" \
+                    --annotation org.opencontainers.image.version="${GIT_SHA}"
 
                 echo "Inspect multi-arch image for ${REPO}/${DNAME}"
                 docker manifest inspect ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} > manifest.json
