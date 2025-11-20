@@ -29,7 +29,7 @@ name: Build docker image - workflow_call/on-demand
         description: 'build images'
       platforms:
         type: string
-        # linux/arm64, linux/amd64
+        # linux/arm64, linux/amd64, linux/riscv64
         default: linux/amd64
         description: 'docker target build platform(s)'
 
@@ -123,8 +123,11 @@ jobs:
           # What about riscv?
           if [[ "${{ matrix.builds.arch }}" == "amd64" ]]; then
             echo "cargo_arch=x86-64" >> $GITHUB_ENV
-          else
+          elif [[ "${{ matrix.builds.arch }}" == "arm64" ]]; then
             echo "cargo_arch=aarch64" >> $GITHUB_ENV
+          else
+            echo "Other platforms are not yet supported!"
+            exit 1
           fi
 
       - name: Set up QEMU for Docker
@@ -136,6 +139,8 @@ jobs:
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
         with:
           images: |
             # name/${{ matrix.builds.image_name }}
@@ -159,6 +164,12 @@ jobs:
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ matrix.builds.version }}
+          annotations: |
+            org.opencontainers.image.vendor=TariLabs
+            org.opencontainers.image.title=${{ matrix.builds.image_name }}
+            org.opencontainers.image.description=Tari OOTLE docker image ${{ matrix.builds.image_name }} for ${{ matrix.builds.arch }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
           flavor: |
             # latest=${{ startsWith(github.ref, 'refs/tags/v') }}
             latest=false
@@ -205,6 +216,9 @@ jobs:
         run: |
           echo "Docker Digest - ${{ steps.docker_build.outputs.digest }}"
           echo "Docker Image - ${{ matrix.builds.image_name }}:${{ matrix.builds.version }}${{ env.DSuffix }}"
+
+      - name: Debug meta annotations
+        run: echo "${{ steps.meta.outputs.annotations }}"
 
   multi-arch-create-manifest:
     needs: [ builds_envs_setup, docker_builds ]
