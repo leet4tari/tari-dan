@@ -281,17 +281,16 @@ jobs:
                   REPO="${{ secrets.DOCKER_REPO }}"
                 fi
 
-                # --annotation quay.expires-after="${{ env.EXPIRATION }}"
-
                 # Convert GitHub expressions into shell variables first
                 GH_REPO="${{ github.repository }}"
                 GH_ACTOR="${{ github.actor }}"
                 GH_SHA="${{ github.sha }}"
 
+                # Arrays mangle quoted strings
+                ## --annotation "index:org.opencontainers.image.description='Tari OOTLE docker image'"
                 DANNOTATIONS=(
                   --annotation "index:org.opencontainers.image.title=${DNAME}"
                   --annotation "index:org.opencontainers.image.vendor=TariLabs"
-                  --annotation "index:org.opencontainers.image.description=Tari OOTLE docker image"
                   --annotation "index:org.opencontainers.image.url=https://github.com/${GH_REPO}"
                   --annotation "index:org.opencontainers.image.source=https://github.com/${GH_REPO}"
                   --annotation "index:org.opencontainers.image.version=${DVERSION}"
@@ -300,10 +299,23 @@ jobs:
                   --annotation "index:maintainer=${GH_ACTOR}"
                 )
 
+                if [[ "${{ github.ref }}" =~ ^refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+                  echo "No Expire for release"
+                else
+                  if [[ "${DREGISTRY}" == "quay.io" ]]; then
+                    QExpire="${{ env.DAYS_to_EXPIRE }}"
+                    echo "Expires in ${QExpire} days"
+                    DANNOTATIONS+=(
+                      --annotation "index:quay.expires-after=${QExpire}d"
+                    )
+                  fi
+                fi
+
                 echo "Registry run - ${DREGISTRY}"
                 echo "Creating multi-arch image for ${REPO}/${DNAME} for ${DVERSION}${DSUFFIX}"
                 docker buildx imagetools create \
                   --tag ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
+                    --annotation 'index:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
                     ${DANNOTATIONS[@]} \
                     ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
                     ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
@@ -316,6 +328,7 @@ jobs:
                   echo "Latest Alias Multi-Arch tag - ${{ inputs.tag_alias }}"
                   docker buildx imagetools create \
                     --tag ${DREGISTRY}/${REPO}/${DNAME}:${{ inputs.tag_alias }}${DSUFFIX} \
+                      --annotation 'index:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
                       ${DANNOTATIONS[@]} \
                       ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
                       ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
@@ -325,6 +338,7 @@ jobs:
                   echo "Release Multi-Arch Tag - ${GITHUB_REF_NAME} for ${GITHUB_REF}"
                   docker buildx imagetools create \
                     --tag ${DREGISTRY}/${REPO}/${DNAME}:${GITHUB_REF_NAME} \
+                      --annotation 'index:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
                       ${DANNOTATIONS[@]} \
                       ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
                       ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64  || true
@@ -334,6 +348,7 @@ jobs:
                   echo "Latest Release Multi-Arch tag - $GITHUB_REF_NAME for $GITHUB_REF using ${DVERSION}${DSUFFIX}"
                   docker buildx imagetools create \
                     --tag ${DREGISTRY}/${REPO}/${DNAME}:latest${DSUFFIX} \
+                      --annotation 'index:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
                       ${DANNOTATIONS[@]} \
                       ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
                       ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
