@@ -163,14 +163,14 @@ jobs:
             org.opencontainers.image.title=${{ matrix.builds.image_name }}
             org.opencontainers.image.description=Tari OOTLE docker image ${{ matrix.builds.image_name }} for ${{ matrix.builds.arch }}
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}.git#${{ github.sha }}
             org.opencontainers.image.version=${{ matrix.builds.version }}
           annotations: |
             org.opencontainers.image.vendor=TariLabs
             org.opencontainers.image.title=${{ matrix.builds.image_name }}
             org.opencontainers.image.description=Tari OOTLE docker image ${{ matrix.builds.image_name }} for ${{ matrix.builds.arch }}
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}.git#${{ github.sha }}
           flavor: |
             # latest=${{ startsWith(github.ref, 'refs/tags/v') }}
             latest=false
@@ -218,6 +218,8 @@ jobs:
           echo "Docker Digest - ${{ steps.docker_build.outputs.digest }}"
           echo "Docker Image - ${{ matrix.builds.image_name }}:${{ matrix.builds.version }}${{ env.DSuffix }}"
 
+      - name: Debug meta labels
+        run: echo "${{ steps.meta.outputs.labels }}"
       - name: Debug meta annotations
         run: echo "${{ steps.meta.outputs.annotations }}"
 
@@ -292,7 +294,7 @@ jobs:
                   --annotation "index:org.opencontainers.image.title=${DNAME}"
                   --annotation "index:org.opencontainers.image.vendor=TariLabs"
                   --annotation "index:org.opencontainers.image.url=https://github.com/${GH_REPO}"
-                  --annotation "index:org.opencontainers.image.source=https://github.com/${GH_REPO}"
+                  --annotation "index:org.opencontainers.image.source=https://github.com/${GH_REPO}.git#${GH_SHA}"
                   --annotation "index:org.opencontainers.image.version=${DVERSION}"
                   --annotation "index:org.opencontainers.image.licenses=BSD-3-Clause"
                   --annotation "index:org.opencontainers.image.revision=${GH_SHA}"
@@ -313,6 +315,25 @@ jobs:
 
                 echo "Registry run - ${DREGISTRY}"
                 echo "Creating multi-arch image for ${REPO}/${DNAME} for ${DVERSION}${DSUFFIX}"
+
+                docker buildx imagetools create \
+                  --tag ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-a \
+                    --annotation 'org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
+
+                docker buildx imagetools create \
+                  --tag ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-b \
+                    --annotation 'index:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
+
+                docker buildx imagetools create \
+                  --tag ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-c \
+                    --annotation 'manifest:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-amd64 \
+                    ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX}-arm64 || true
+
                 docker buildx imagetools create \
                   --tag ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} \
                     --annotation 'index:org.opencontainers.image.description="Tari '${DNAME}' docker image"' \
@@ -323,6 +344,8 @@ jobs:
                 echo "Inspect multi-arch image for ${REPO}/${DNAME}"
                 docker manifest inspect ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} > manifest.json
                 cat manifest.json
+                docker buildx imagetools inspect ${DREGISTRY}/${REPO}/${DNAME}:${DVERSION}${DSUFFIX} > buildx-manifest.json
+                cat buildx-manifest.json
 
                 if [[ "${{ inputs.tag_alias }}" =~ ^latest-.*$ ]]; then
                   echo "Latest Alias Multi-Arch tag - ${{ inputs.tag_alias }}"
