@@ -42,7 +42,7 @@ jobs:
         run: |
           echo "Registry: $(npm config get registry)"
           env | grep ACTIONS_ID_TOKEN || echo "No OIDC env found"
-          npm whoami || echo "Expected fail: OIDC not visible via npm whoami"
+          # npm whoami || echo "Expected fail: OIDC not visible via npm whoami"
       - name: Publish to NPM
         run: |
           if pnpm info . version | grep -q "^$VERSION$"; then
