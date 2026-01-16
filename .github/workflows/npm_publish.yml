@@ -45,15 +45,38 @@ jobs:
           echo "Registry: $(npm config get registry)"
           env | grep ACTIONS_ID_TOKEN || echo "No OIDC env found"
           # npm whoami || echo "Expected fail: OIDC not visible via npm whoami"
-      - name: Publish to NPM
+      - name: Publish to NPM (debug)
         run: |
-          if pnpm info . version | grep -q "^$VERSION$"; then
-            echo "Version $VERSION already published, skipping."
-          else
-            echo "Getting ready to publish version $VERSION"
-            env | grep ACTIONS_ID_TOKEN || echo "No OIDC env found"
-            pnpm publish --access public --no-git-checks --provenance
+          set -euo pipefail
+
+          echo "== Working directory =="
+          pwd
+
+          echo "== Local package.json =="
+          node -e "const p=require('./package.json'); console.log({name:p.name, version:p.version})"
+
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+
+          echo "Local version: $LOCAL_VERSION"
+          echo "Package name:  $PACKAGE_NAME"
+
+          echo "== Registry check =="
+          echo "Running: pnpm info $PACKAGE_NAME version"
+
+          REMOTE_VERSION=$(pnpm info "$PACKAGE_NAME" version 2>/dev/null || echo "NOT_FOUND")
+          echo "Remote version: $REMOTE_VERSION"
+
+          if [ "$REMOTE_VERSION" = "$LOCAL_VERSION" ]; then
+            echo "Version $LOCAL_VERSION already published, skipping."
+            exit 0
           fi
+
+          echo "== OIDC env check =="
+          env | grep ACTIONS_ID_TOKEN || echo "❌ No OIDC env found"
+
+          echo "== Publishing =="
+          pnpm publish --access public --no-git-checks --provenance
 
   # Publish the Tari Wallet Daemon client to the NPM registry
   publish-wallet-daemon-client:
