@@ -5,7 +5,7 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "provenance": true
+    "provenance": false
   },
   "description": "TypeScript types synchronized to the Tari Ootle Rust codebase",
   "homepage": "https://github.com/leet4tari/tari-ootle#readme",
