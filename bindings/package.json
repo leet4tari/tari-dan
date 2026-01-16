@@ -1,6 +1,6 @@
 {
   "name": "@leet4tari/ootle-ts-bindings",
-  "version": "1.23.2",
+  "version": "1.23.3",
   "private": false,
   "publishConfig": {
     "access": "public",
