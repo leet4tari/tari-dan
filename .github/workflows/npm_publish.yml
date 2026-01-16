@@ -75,6 +75,18 @@ jobs:
           echo "== OIDC env check =="
           env | grep ACTIONS_ID_TOKEN || echo "❌ No OIDC env found"
 
+          # 🔥 Kill token-based auth so OIDC is used
+          unset NODE_AUTH_TOKEN
+          unset NPM_TOKEN
+          unset NPM_CONFIG_USERCONFIG
+
+          # Extra safety: ensure no lingering npmrc
+          rm -f ~/.npmrc
+          rm -f "$NPM_CONFIG_USERCONFIG" || true
+
+          echo "Auth-related env after cleanup:"
+          env | grep -E 'NODE_AUTH|NPM_TOKEN|npmrc' || echo "OK: no token envs"
+
           echo "== Publishing =="
           pnpm publish --access public --no-git-checks --provenance
 
