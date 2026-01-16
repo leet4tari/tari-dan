@@ -1,5 +1,5 @@
 {
-  "name": "@tari-project/ootle-ts-bindings",
+  "name": "@leet4tari/ootle-ts-bindings",
   "version": "1.23.2",
   "private": false,
   "publishConfig": {
@@ -8,13 +8,13 @@
     "provenance": true
   },
   "description": "TypeScript types synchronized to the Tari Ootle Rust codebase",
-  "homepage": "https://github.com/tari-project/tari-ootle#readme",
+  "homepage": "https://github.com/leet4tari/tari-ootle#readme",
   "bugs": {
-    "url": "https://github.com/tari-project/tari-ootle/issues"
+    "url": "https://github.com/leet4tari/tari-ootle/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tari-project/tari-ootle.git"
+    "url": "git+https://github.com/leet4tari/tari-ootle.git"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
