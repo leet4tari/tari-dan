@@ -5,7 +5,6 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
-    "publish-branch": "test-npm-pub-trusted",
     "provenance": false
   },
   "description": "TypeScript types synchronized to the Tari Ootle Rust codebase",
@@ -31,6 +30,7 @@
   ],
   "author": "",
   "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "bech32": "^2.0.0"
   },
