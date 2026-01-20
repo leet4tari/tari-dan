@@ -47,7 +47,7 @@ jobs:
           # npm whoami || echo "Expected fail: OIDC not visible via npm whoami"
       - name: Publish to NPM (debug)
         run: |
-          set -euo pipefail
+          #set -euo pipefail
 
           echo "== Working directory =="
           pwd
@@ -91,9 +91,9 @@ jobs:
           #pnpm publish --access public --no-git-checks --provenance
           #npm config delete publish-branch || true
           #yes | pnpm publish
-          export CI=true
-          export npm_config_yes=true
-          export npm_config_interactive=false
+          #export CI=true
+          #export npm_config_yes=true
+          #export npm_config_interactive=false
           printenv
           #yes || true | pnpm publish
           pnpm publish
