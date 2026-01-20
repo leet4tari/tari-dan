@@ -88,15 +88,15 @@ jobs:
           # env | grep -E 'NODE_AUTH|NPM_TOKEN|npmrc' || echo "OK: no token envs"
 
           echo "== Publishing =="
-          printenv
           #pnpm publish --access public --no-git-checks --provenance
-          npm config delete publish-branch || true
+          #npm config delete publish-branch || true
           #yes | pnpm publish
           export CI=true
           export npm_config_yes=true
           export npm_config_interactive=false
-          yes || true | pnpm publish
-          #pnpm publish
+          printenv
+          #yes || true | pnpm publish
+          pnpm publish
           #npm publish
 
   # Publish the Tari Wallet Daemon client to the NPM registry

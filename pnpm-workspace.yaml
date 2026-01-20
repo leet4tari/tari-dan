@@ -16,4 +16,4 @@ ignoredBuiltDependencies:
   - esbuild
   - msw
 
-publishBranch: development
+publishBranch: test-npm-pub-trusted
