@@ -90,7 +90,7 @@ jobs:
           echo "== Publishing =="
           printenv
           #pnpm publish --access public --no-git-checks --provenance
-          pnpm publish
+          pnpm publish --no-git-checks
           #npm publish
 
   # Publish the Tari Wallet Daemon client to the NPM registry
