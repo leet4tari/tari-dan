@@ -96,7 +96,7 @@ jobs:
           #export npm_config_interactive=false
           #printenv
           #yes || true | pnpm publish
-          pnpm publish
+          pnpm publish --provenance
           #npm publish
 
   # Publish the Tari Wallet Daemon client to the NPM registry
