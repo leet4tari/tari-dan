@@ -94,7 +94,7 @@ jobs:
           #export CI=true
           #export npm_config_yes=true
           #export npm_config_interactive=false
-          printenv
+          #printenv
           #yes || true | pnpm publish
           pnpm publish
           #npm publish
