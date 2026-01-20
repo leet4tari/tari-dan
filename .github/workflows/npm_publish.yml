@@ -90,7 +90,8 @@ jobs:
           echo "== Publishing =="
           printenv
           #pnpm publish --access public --no-git-checks --provenance
-          pnpm publish --no-git-checks
+          npm config delete publish-branch || true
+          yes | pnpm publish
           #npm publish
 
   # Publish the Tari Wallet Daemon client to the NPM registry
