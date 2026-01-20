@@ -35,7 +35,7 @@ jobs:
         with:
           registry-url: "https://registry.npmjs.org"
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          #cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build-dist
       - name: Debug auth info
@@ -89,8 +89,8 @@ jobs:
 
           echo "== Publishing =="
           printenv
-          #pnpm publish --access public --no-git-checks --provenance
-          npm publish
+          pnpm publish --access public --no-git-checks --provenance
+          #npm publish
 
   # Publish the Tari Wallet Daemon client to the NPM registry
   publish-wallet-daemon-client:
