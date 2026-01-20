@@ -91,7 +91,11 @@ jobs:
           printenv
           #pnpm publish --access public --no-git-checks --provenance
           npm config delete publish-branch || true
-          yes | pnpm publish
+          #yes | pnpm publish
+          export CI=true
+          export npm_config_yes=true
+          export npm_config_interactive=false
+          pnpm publish
           #npm publish
 
   # Publish the Tari Wallet Daemon client to the NPM registry
