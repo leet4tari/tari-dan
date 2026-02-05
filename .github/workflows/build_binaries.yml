@@ -697,7 +697,7 @@ jobs:
       - name: Artifact upload for Standalone tari_ootle_walletd binary
         uses: actions/upload-artifact@v6
         with:
-          name: tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}
+          name: tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}
           path: "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd${{ env.TS_EXT }}"
 
   macOS-universal-assemble:
