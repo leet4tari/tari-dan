@@ -27,6 +27,7 @@ env:
   TS_FILES_STANDALONE: '["tari_ootle_walletd"]'
   TS_FEATURES: "default"
   TS_LIBRARIES: ""
+  TS_EXT: "" # or ".exe" for Windows builds
   TS_DESCRIPTION: "Tari Ootle"
   TS_URL: "https://tari.com"
   # For debug builds
@@ -697,8 +698,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}
-          path: |
-            ${{ env.MTS_SOURCE }}/tari_ootle_walletd${{ env.TS_EXT }}
+          path: "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd${{ env.TS_EXT }}"
 
   macOS-universal-assemble:
     name: macOS universal assemble
