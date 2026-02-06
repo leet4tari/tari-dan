@@ -694,11 +694,25 @@ jobs:
           name: ${{ env.TS_FILENAME }}_archive-${{ matrix.builds.name }}
           path: "${{ github.workspace }}${{ env.TS_DIST }}/${{ env.BINFILE }}.zip*"
 
+      - name: Prep Standalone tari_ootle_walletd binary for upload
+        shell: bash
+        run: |
+          set -xo pipefail
+          cp -v "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd${{ env.TS_EXT }}" \
+            "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}"
+          echo "Compute files shasum"
+          ${SHARUN} "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}" \
+            >> "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}.sha256"
+          echo "Show the shasum"
+          cat "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}.sha256"
+          echo "Checksum verification archive is "
+          ${SHARUN} --check "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}.sha256"
+
       - name: Artifact upload for Standalone tari_ootle_walletd binary
         uses: actions/upload-artifact@v6
         with:
           name: tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}
-          path: "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd${{ env.TS_EXT }}"
+          path: "${{ github.workspace }}${{ env.TS_DIST }}/tari_ootle_walletd-${{ env.TARI_VERSION }}-${{ env.VSHA_SHORT }}-${{ matrix.builds.name }}${{ env.TS_EXT }}*"
 
   macOS-universal-assemble:
     name: macOS universal assemble
